@@ -2,7 +2,10 @@ module github.com/rubaiat-hossain/terraform-provider-platformsh
 
 go 1.22.4
 
-require github.com/hashicorp/terraform-plugin-framework v1.9.0
+require (
+	github.com/hashicorp-demoapp/hashicups-client-go v0.1.0
+	github.com/hashicorp/terraform-plugin-framework v1.9.0
+)
 
 require (
 	github.com/fatih/color v1.13.0 // indirect

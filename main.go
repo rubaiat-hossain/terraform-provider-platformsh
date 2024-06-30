@@ -6,7 +6,7 @@ import (
 	"context"
 	"flag"
 	"log"
-	"terraform-provider-platformsh/internal/provider"
+	"github.com/rubaiat-hossain/terraform-provider-platformsh/internal/provider"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
