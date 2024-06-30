@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/hashicorp-demoapp/platformsh-client-go"
+	"github.com/hashicorp-demoapp/hashicups-client-go"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -15,31 +15,34 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ provider.Provider = &psProvider{}
+	_ provider.Provider = &hashicupsProvider{}
 )
 
 // New is a helper function to simplify provider server and testing implementation.
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
-		return &psProvider{
+		return &hashicupsProvider{
 			version: version,
 		}
 	}
 }
 
-// psProvider is the provider implementation.
-type psProvider struct {
+// hashicupsProvider is the provider implementation.
+type hashicupsProvider struct {
+	// version is set to the provider version on release, "dev" when the
+	// provider is built and ran locally, and "test" when running acceptance
+	// testing.
 	version string
 }
 
 // Metadata returns the provider type name.
-func (p *psProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "platformsh"
+func (p *hashicupsProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "hashicups"
 	resp.Version = p.version
 }
 
 // Schema defines the provider-level schema for configuration data.
-func (p *psProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *hashicupsProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
@@ -56,9 +59,9 @@ func (p *psProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *p
 	}
 }
 
-func (p *psProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+func (p *hashicupsProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	// Retrieve provider data from configuration
-	var config psProviderModel
+	var config hashicupsProviderModel
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -156,7 +159,7 @@ func (p *psProvider) Configure(ctx context.Context, req provider.ConfigureReques
 	}
 
 	// Create a new HashiCups client using the configuration values
-	client, err := platformsh.NewClient(&host, &username, &password)
+	client, err := hashicups.NewClient(&host, &username, &password)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Create HashiCups API Client",
@@ -174,17 +177,17 @@ func (p *psProvider) Configure(ctx context.Context, req provider.ConfigureReques
 }
 
 // DataSources defines the data sources implemented in the provider.
-func (p *psProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+func (p *hashicupsProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return nil
 }
 
 // Resources defines the resources implemented in the provider.
-func (p *psProvider) Resources(_ context.Context) []func() resource.Resource {
+func (p *hashicupsProvider) Resources(_ context.Context) []func() resource.Resource {
 	return nil
 }
 
-// psProviderModel maps provider schema data to a Go type.
-type psProviderModel struct {
+// hashicupsProviderModel maps provider schema data to a Go type.
+type hashicupsProviderModel struct {
 	Host     types.String `tfsdk:"host"`
 	Username types.String `tfsdk:"username"`
 	Password types.String `tfsdk:"password"`
