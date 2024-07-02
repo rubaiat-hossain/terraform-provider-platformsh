@@ -2,83 +2,58 @@ package provider
 
 import (
 	"context"
+	"net/http"
 
-	"github.com/rubaiat-hossain/terraform-provider-platformsh/internal/platformsh"
-
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/rubaiat-hossain/terraform-provider-platformsh/internal/platformsh"
 )
 
-// Ensure the implementation satisfies the expected interfaces
-var (
-	_ provider.Provider = &platformshProvider{}
-)
+// Ensure provider implementation satisfies the provider.Provider interface.
+var _ provider.Provider = &platformshProvider{}
 
-func New(version string) func() provider.Provider {
-	return func() provider.Provider {
-		return &platformshProvider{
-			version: version,
-		}
-	}
+// New creates a new platformsh provider.
+func New() provider.Provider {
+	return &platformshProvider{}
 }
 
-// platformshProvider defines the provider implementation
+// platformshProvider defines the provider implementation.
 type platformshProvider struct {
-	version string
+	client *platformsh.Client
 }
 
-// Metadata returns the provider type name
+// Metadata returns the provider type name.
 func (p *platformshProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "platformsh"
-	resp.Version = p.version
 }
 
-// Schema defines the provider-level schema for configuration data
+// Schema defines the provider-level schema for configuration data.
 func (p *platformshProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes: map[string]schema.Attribute{
-			"api_token": schema.StringAttribute{
-				Description: "API token for Platform.sh",
-				Required:    true,
-			},
-		},
+		MarkdownDescription: "Platform.sh provider",
 	}
 }
 
-// Configure prepares the API client
+// Configure prepares the provider with the given configuration.
 func (p *platformshProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var config struct {
-		APIToken types.String `tfsdk:"api_token"`
-	}
-
-	diags := req.Config.Get(ctx, &config)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Create a new Platform.sh client using the configuration values
-	client, err := platformsh.NewClient(config.APIToken.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Create Platform.sh API Client",
-			"An unexpected error occurred when creating the Platform.sh API client. "+
-				"If the error is not clear, please contact the provider developers.\n\n"+
-				"Platform.sh Client Error: "+err.Error(),
-		)
-		return
-	}
-
-	// Make the Platform.sh client available during DataSource and Resource type Configure methods
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	// Configuration data can be retrieved from req.Config
+	// For simplicity, we assume a static base URL and use http.DefaultClient
+	baseURL := "https://api.platform.sh"
+	p.client = platformsh.NewClient(baseURL, http.DefaultClient)
 }
 
-// Resources returns the resource implementations
+// Resources returns the resource implementations supported by this provider.
 func (p *platformshProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewPlatformshEnvironmentResource,
+		NewEnvironmentResource,
+	}
+}
+
+// DataSources returns the data source implementations supported by this provider.
+func (p *platformshProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+		NewEnvironmentDataSource,
 	}
 }

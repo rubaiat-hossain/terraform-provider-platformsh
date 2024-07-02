@@ -1,48 +1,31 @@
 package platformsh
 
 import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/go-resty/resty/v2"
+	"net/http"
 )
 
+// Client represents the client to interact with Platform.sh API.
 type Client struct {
-	resty *resty.Client
+	BaseURL    string
+	HTTPClient *http.Client
 }
 
-func NewClient(apiToken string) (*Client, error) {
-	client := resty.New()
-
-	resp, err := client.R().
-		SetBasicAuth("platform-api-user", "").
-		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		SetFormData(map[string]string{
-			"grant_type": "api_token",
-			"api_token":  apiToken,
-		}).
-		Post("https://auth.api.platform.sh/oauth2/token")
-
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode() != 200 {
-		return nil, fmt.Errorf("failed to get token: %s", resp.Status())
-	}
-
-	var result map[string]interface{}
-	if err := json.Unmarshal(resp.Body(), &result); err != nil {
-		return nil, err
-	}
-
-	token, ok := result["access_token"].(string)
-	if !ok {
-		return nil, fmt.Errorf("access token not found in response")
-	}
-
+// NewClient creates a new Platform.sh API client.
+func NewClient(baseURL string, httpClient *http.Client) *Client {
 	return &Client{
-		resty: client.SetAuthToken("Bearer " + token),
-	}, nil
+		BaseURL:    baseURL,
+		HTTPClient: httpClient,
+	}
 }
 
+// GetEnvironment is a placeholder for the actual implementation.
+func (c *Client) GetEnvironment(id string) (*Environment, error) {
+	// Placeholder implementation - replace with actual API call
+	return &Environment{ID: id, Name: "example-env"}, nil
+}
+
+// Environment represents an environment in Platform.sh.
+type Environment struct {
+	ID   string
+	Name string
+}
