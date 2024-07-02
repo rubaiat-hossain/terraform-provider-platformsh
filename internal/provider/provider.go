@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/rubaiat-hossain/terraform-provider-platformsh/platformsh"
+	"github.com/rubaiat-hossain/terraform-provider-platformsh/internal/platformsh"
 
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"

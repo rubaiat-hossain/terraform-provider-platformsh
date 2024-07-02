@@ -2,9 +2,9 @@ package provider
 
 import (
 	"context"
-	"terraform-provider-platformsh/platformsh"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/rubaiat-hossain/terraform-provider-platformsh/internal/platformsh"
+
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -68,4 +68,3 @@ func (r *platformshEnvironmentResource) Update(ctx context.Context, req resource
 func (r *platformshEnvironmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Implementation here
 }
-
