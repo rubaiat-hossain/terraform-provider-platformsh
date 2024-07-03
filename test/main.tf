@@ -1,12 +1,25 @@
-// main.tf
 terraform {
   required_providers {
-    hashicups = {
+    platformsh = {
       source = "local.provider/rhs/platformsh"
     }
   }
 }
 
-provider "hashicups" {}
+provider "platformsh" {
+  api_token = "bs0oAldrnjRH6JMPSLtqrwjKzlgLudvXXc7Es8Zo2lQ"
+}
 
-data "hashicups_coffees" "example" {}
+data "platformsh_projects" "example" {}
+
+output "project_ids" {
+  value = [for p in data.platformsh_projects.example.projects : p.id]
+}
+
+output "project_titles" {
+  value = [for p in data.platformsh_projects.example.projects : p.title]
+}
+
+output "project_descriptions" {
+  value = [for p in data.platformsh_projects.example.projects : p.description]
+}

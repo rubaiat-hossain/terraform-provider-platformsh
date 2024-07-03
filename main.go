@@ -10,7 +10,7 @@ import (
 
 func main() {
 	err := providerserver.Serve(context.Background(), provider.New, providerserver.ServeOpts{
-		Address: "registry.terraform.io/rubaiat-hossain/platformsh",
+		Address: "local.provider/rhs/platformsh",
 	})
 	if err != nil {
 		log.Fatal(err)

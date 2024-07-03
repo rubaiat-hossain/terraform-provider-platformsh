@@ -10,45 +10,61 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ datasource.DataSource = &EnvironmentDataSource{}
+var _ datasource.DataSource = &ProjectDataSource{}
 
-func NewEnvironmentDataSource() datasource.DataSource {
-	return &EnvironmentDataSource{}
+func NewProjectDataSource() datasource.DataSource {
+	return &ProjectDataSource{}
 }
 
-// EnvironmentDataSource defines the data source implementation.
-type EnvironmentDataSource struct {
+// ProjectDataSource defines the data source implementation.
+type ProjectDataSource struct {
 	client *platformsh.Client
 }
 
-// EnvironmentDataSourceModel describes the data source data model.
-type EnvironmentDataSourceModel struct {
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
+// ProjectDataSourceModel describes the data source data model.
+type ProjectDataSourceModel struct {
+	Projects []ProjectModel `tfsdk:"projects"`
 }
 
-func (d *EnvironmentDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_environment"
+type ProjectModel struct {
+	ID          types.String `tfsdk:"id"`
+	Title       types.String `tfsdk:"title"`
+	Description types.String `tfsdk:"description"`
 }
 
-func (d *EnvironmentDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *ProjectDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_projects"
+}
+
+func (d *ProjectDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Environment data source",
-
+		MarkdownDescription: "Fetches the list of projects available in Platform.sh",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				MarkdownDescription: "ID of the environment",
-				Required:            true,
-			},
-			"name": schema.StringAttribute{
-				MarkdownDescription: "Name of the environment",
+			"projects": schema.ListNestedAttribute{
+				MarkdownDescription: "List of projects",
 				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"id": schema.StringAttribute{
+							MarkdownDescription: "ID of the project",
+							Computed:            true,
+						},
+						"title": schema.StringAttribute{
+							MarkdownDescription: "Title of the project",
+							Computed:            true,
+						},
+						"description": schema.StringAttribute{
+							MarkdownDescription: "Description of the project",
+							Computed:            true,
+						},
+					},
+				},
 			},
 		},
 	}
 }
 
-func (d *EnvironmentDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *ProjectDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -67,28 +83,27 @@ func (d *EnvironmentDataSource) Configure(ctx context.Context, req datasource.Co
 	d.client = client
 }
 
-func (d *EnvironmentDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data EnvironmentDataSourceModel
+func (d *ProjectDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var data ProjectDataSourceModel
 
-	// Read Terraform configuration data into the model
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Call the GetEnvironment method
-	env, err := d.client.GetEnvironment(data.ID.ValueString())
+	// Fetch the projects
+	projects, err := d.client.GetProjects()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Client Error",
-			"Unable to read environment, got error: "+err.Error(),
+			"Unable to read projects, got error: "+err.Error(),
 		)
 		return
 	}
 
-	// Set the name attribute
-	data.Name = types.StringValue(env.Name)
+	// Map the projects to the Terraform data model
+	for _, project := range projects {
+		data.Projects = append(data.Projects, ProjectModel{
+			ID:          types.StringValue(project.ID),
+			Title:       types.StringValue(project.Title),
+			Description: types.StringValue(project.Description),
+		})
+	}
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
