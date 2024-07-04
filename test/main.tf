@@ -15,11 +15,3 @@ data "platformsh_projects" "example" {}
 output "project_ids" {
   value = [for p in data.platformsh_projects.example.projects : p.id]
 }
-
-output "project_titles" {
-  value = [for p in data.platformsh_projects.example.projects : p.title]
-}
-
-output "project_descriptions" {
-  value = [for p in data.platformsh_projects.example.projects : p.description]
-}
