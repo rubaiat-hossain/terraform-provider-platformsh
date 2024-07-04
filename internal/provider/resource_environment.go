@@ -6,74 +6,87 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/rubaiat-hossain/terraform-provider-platformsh/internal/platformsh"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &platformshEnvironmentResource{}
-var _ resource.ResourceWithConfigure = &platformshEnvironmentResource{}
-var _ resource.ResourceWithImportState = &platformshEnvironmentResource{}
+var _ resource.Resource = &EnvironmentResource{}
+var _ resource.ResourceWithConfigure = &EnvironmentResource{}
+var _ resource.ResourceWithImportState = &EnvironmentResource{}
 
 func NewEnvironmentResource() resource.Resource {
-	return &platformshEnvironmentResource{}
+	return &EnvironmentResource{}
 }
 
-// platformshEnvironmentResource defines the resource implementation.
-type platformshEnvironmentResource struct {
+// EnvironmentResource defines the resource implementation.
+type EnvironmentResource struct {
 	client *platformsh.Client
 }
 
-// platformshEnvironmentResourceModel describes the resource data model.
-type platformshEnvironmentResourceModel struct {
-	ID                    types.String `tfsdk:"id"`
-	ProjectID             types.String `tfsdk:"project_id"`
-	EnvironmentName       types.String `tfsdk:"environment_name"`
-	ConfigurableAttribute types.String `tfsdk:"configurable_attribute"`
-	Defaulted             types.String `tfsdk:"defaulted"`
+// EnvironmentResourceModel describes the resource data model.
+type EnvironmentResourceModel struct {
+	ID             types.String `tfsdk:"id"`
+	ProjectID      types.String `tfsdk:"project_id"`
+	Name           types.String `tfsdk:"name"`
+	Title          types.String `tfsdk:"title"`
+	Type           types.String `tfsdk:"type"`
+	Status         types.String `tfsdk:"status"`
+	DefaultDomain  types.String `tfsdk:"default_domain"`
+	EnableSMTP     types.Bool   `tfsdk:"enable_smtp"`
+	RestrictRobots types.Bool   `tfsdk:"restrict_robots"`
 }
 
-func (r *platformshEnvironmentResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *EnvironmentResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_environment"
 }
 
-func (r *platformshEnvironmentResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *EnvironmentResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Platform.sh environment resource",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description: "ID of the environment",
+				Computed:    true,
+			},
 			"project_id": schema.StringAttribute{
-				Description: "ID of the Platform.sh project.",
+				Description: "ID of the project",
 				Required:    true,
 			},
-			"environment_name": schema.StringAttribute{
-				Description: "Name of the environment.",
+			"name": schema.StringAttribute{
+				Description: "Name of the environment",
 				Required:    true,
 			},
-			"configurable_attribute": schema.StringAttribute{
-				Description: "Example configurable attribute",
+			"title": schema.StringAttribute{
+				Description: "Title of the environment",
 				Optional:    true,
 			},
-			"defaulted": schema.StringAttribute{
-				Description: "Example configurable attribute with default value",
+			"type": schema.StringAttribute{
+				Description: "Type of the environment",
+				Computed:    true,
+			},
+			"status": schema.StringAttribute{
+				Description: "Status of the environment",
+				Computed:    true,
+			},
+			"default_domain": schema.StringAttribute{
+				Description: "Default domain of the environment",
+				Computed:    true,
+			},
+			"enable_smtp": schema.BoolAttribute{
+				Description: "Enable SMTP for the environment",
 				Optional:    true,
 				Computed:    true,
-				Default:     stringdefault.StaticString("example value when not configured"),
 			},
-			"id": schema.StringAttribute{
-				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+			"restrict_robots": schema.BoolAttribute{
+				Description: "Restrict robots for the environment",
+				Optional:    true,
+				Computed:    true,
 			},
 		},
 	}
 }
 
-func (r *platformshEnvironmentResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *EnvironmentResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -90,8 +103,8 @@ func (r *platformshEnvironmentResource) Configure(ctx context.Context, req resou
 	r.client = client
 }
 
-func (r *platformshEnvironmentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data platformshEnvironmentResourceModel
+func (r *EnvironmentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data EnvironmentResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -100,17 +113,46 @@ func (r *platformshEnvironmentResource) Create(ctx context.Context, req resource
 	}
 
 	// Call Platform.sh API to create the environment
-	// For the purposes of this example, hardcoding a response value to save into the Terraform state.
-	data.ID = types.StringValue("example-id")
+	environment := &platformsh.Environment{
+		Name:           data.Name.ValueString(),
+		Title:          data.Title.ValueString(),
+		EnableSMTP:     data.EnableSMTP.ValueBool(),
+		RestrictRobots: data.RestrictRobots.ValueBool(),
+	}
 
-	tflog.Trace(ctx, "created a resource")
+	createdEnvironment, err := r.client.CreateEnvironment(data.ProjectID.ValueString(), environment)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Client Error",
+			"Unable to create environment, got error: "+err.Error(),
+		)
+		return
+	}
 
 	// Save data into Terraform state
+	data.ID = types.StringValue(createdEnvironment.ID)
+	data.Type = types.StringValue(createdEnvironment.Type)
+	data.Status = types.StringValue(createdEnvironment.Status)
+	data.DefaultDomain = types.StringValue(createdEnvironment.DefaultDomain)
+	data.EnableSMTP = types.BoolValue(createdEnvironment.EnableSMTP)
+	data.RestrictRobots = types.BoolValue(createdEnvironment.RestrictRobots)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Call the Read function to sync the state
+	readReq := resource.ReadRequest{
+		State: resp.State,
+	}
+	readResp := &resource.ReadResponse{}
+	r.Read(ctx, readReq, readResp)
+	resp.Diagnostics.Append(readResp.Diagnostics...)
 }
 
-func (r *platformshEnvironmentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data platformshEnvironmentResourceModel
+func (r *EnvironmentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data EnvironmentResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -119,16 +161,29 @@ func (r *platformshEnvironmentResource) Read(ctx context.Context, req resource.R
 	}
 
 	// Call Platform.sh API to read the environment
-	// For the purposes of this example, assume the environment is still available and up-to-date.
-
-	tflog.Trace(ctx, "read a resource")
+	environment, err := r.client.GetEnvironment(data.ProjectID.ValueString(), data.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Client Error",
+			"Unable to read environment, got error: "+err.Error(),
+		)
+		return
+	}
 
 	// Save updated data into Terraform state
+	data.Name = types.StringValue(environment.Name)
+	data.Title = types.StringValue(environment.Title)
+	data.Type = types.StringValue(environment.Type)
+	data.Status = types.StringValue(environment.Status)
+	data.DefaultDomain = types.StringValue(environment.DefaultDomain)
+	data.EnableSMTP = types.BoolValue(environment.EnableSMTP)
+	data.RestrictRobots = types.BoolValue(environment.RestrictRobots)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *platformshEnvironmentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data platformshEnvironmentResourceModel
+func (r *EnvironmentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data EnvironmentResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -137,17 +192,45 @@ func (r *platformshEnvironmentResource) Update(ctx context.Context, req resource
 	}
 
 	// Call Platform.sh API to update the environment
-	// For the purposes of this example, hardcoding a response value to save into the Terraform state.
-	data.ID = types.StringValue("example-id")
+	environment := &platformsh.Environment{
+		Name:           data.Name.ValueString(),
+		Title:          data.Title.ValueString(),
+		EnableSMTP:     data.EnableSMTP.ValueBool(),
+		RestrictRobots: data.RestrictRobots.ValueBool(),
+	}
 
-	tflog.Trace(ctx, "updated a resource")
+	updatedEnvironment, err := r.client.UpdateEnvironment(data.ProjectID.ValueString(), data.ID.ValueString(), environment)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Client Error",
+			"Unable to update environment, got error: "+err.Error(),
+		)
+		return
+	}
 
 	// Save updated data into Terraform state
+	data.Type = types.StringValue(updatedEnvironment.Type)
+	data.Status = types.StringValue(updatedEnvironment.Status)
+	data.DefaultDomain = types.StringValue(updatedEnvironment.DefaultDomain)
+	data.EnableSMTP = types.BoolValue(updatedEnvironment.EnableSMTP)
+	data.RestrictRobots = types.BoolValue(updatedEnvironment.RestrictRobots)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Call the Read function to sync the state
+	readReq := resource.ReadRequest{
+		State: resp.State,
+	}
+	readResp := &resource.ReadResponse{}
+	r.Read(ctx, readReq, readResp)
+	resp.Diagnostics.Append(readResp.Diagnostics...)
 }
 
-func (r *platformshEnvironmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data platformshEnvironmentResourceModel
+func (r *EnvironmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data EnvironmentResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -156,20 +239,25 @@ func (r *platformshEnvironmentResource) Delete(ctx context.Context, req resource
 	}
 
 	// Call Platform.sh API to delete the environment
-	// For the purposes of this example, assume the environment was successfully deleted.
-
-	tflog.Trace(ctx, "deleted a resource")
+	err := r.client.DeleteEnvironment(data.ProjectID.ValueString(), data.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Client Error",
+			"Unable to delete environment, got error: "+err.Error(),
+		)
+		return
+	}
 
 	// Remove resource from Terraform state
 	resp.State.RemoveResource(ctx)
 }
 
-func (r *platformshEnvironmentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *EnvironmentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Retrieve the resource ID from the import request
 	resourceID := req.ID
 
 	// Set the resource ID in the state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &platformshEnvironmentResourceModel{
+	resp.Diagnostics.Append(resp.State.Set(ctx, &EnvironmentResourceModel{
 		ID: types.StringValue(resourceID),
 	})...)
 }

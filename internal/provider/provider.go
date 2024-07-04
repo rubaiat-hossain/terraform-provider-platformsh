@@ -69,8 +69,9 @@ func (p *platformshProvider) Configure(ctx context.Context, req provider.Configu
 
 // Resources returns the resource implementations supported by this provider.
 func (p *platformshProvider) Resources(ctx context.Context) []func() resource.Resource {
-	// Return an empty list as we have no resources implemented yet
-	return nil
+	return []func() resource.Resource{
+		NewEnvironmentResource,
+	}
 }
 
 // DataSources returns the data source implementations supported by this provider.
