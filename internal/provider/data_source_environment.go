@@ -108,3 +108,107 @@ func (d *ProjectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
+
+var _ datasource.DataSource = &EnvironmentDataSource{}
+
+func NewEnvironmentDataSource() datasource.DataSource {
+	return &EnvironmentDataSource{}
+}
+
+// EnvironmentDataSource defines the data source implementation.
+type EnvironmentDataSource struct {
+	client *platformsh.Client
+}
+
+// EnvironmentDataSourceModel describes the data source data model.
+type EnvironmentDataSourceModel struct {
+	ProjectID    types.String       `tfsdk:"project_id"`
+	Environments []EnvironmentModel `tfsdk:"environments"`
+}
+
+type EnvironmentModel struct {
+	ID        types.String `tfsdk:"id"`
+	CreatedAt types.String `tfsdk:"created_at"`
+}
+
+func (d *EnvironmentDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_environments"
+}
+
+func (d *EnvironmentDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: "Fetches the list of environments for a given project in Platform.sh",
+		Attributes: map[string]schema.Attribute{
+			"project_id": schema.StringAttribute{
+				MarkdownDescription: "ID of the project",
+				Required:            true,
+			},
+			"environments": schema.ListNestedAttribute{
+				MarkdownDescription: "List of environments",
+				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"id": schema.StringAttribute{
+							MarkdownDescription: "ID of the environment",
+							Computed:            true,
+						},
+						"created_at": schema.StringAttribute{
+							MarkdownDescription: "Creation time of the environment",
+							Computed:            true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (d *EnvironmentDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
+
+	client, ok := req.ProviderData.(*platformsh.Client)
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			"Expected *platformsh.Client",
+		)
+		return
+	}
+
+	d.client = client
+}
+
+func (d *EnvironmentDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var config EnvironmentDataSourceModel
+
+	// Read the configuration
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Fetch the environments
+	environments, err := d.client.GetEnvironments(config.ProjectID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Client Error",
+			"Unable to read environments, got error: "+err.Error(),
+		)
+		return
+	}
+
+	// Map the environments to the Terraform data model
+	for _, environment := range environments {
+		config.Environments = append(config.Environments, EnvironmentModel{
+			ID:        types.StringValue(environment.ID),
+			CreatedAt: types.StringValue(environment.CreatedAt),
+		})
+	}
+
+	// Save data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+}

@@ -22,10 +22,6 @@ type Project struct {
 	Description string `json:"description"`
 }
 
-type ProjectsResponse struct {
-	Projects []Project `json:"projects"`
-}
-
 type Environment struct {
 	ID             string `json:"id"`
 	Name           string `json:"name"`
@@ -35,10 +31,7 @@ type Environment struct {
 	DefaultDomain  string `json:"default_domain"`
 	EnableSMTP     bool   `json:"enable_smtp"`
 	RestrictRobots bool   `json:"restrict_robots"`
-}
-
-type EnvironmentsResponse struct {
-	Environments []Environment `json:"environments"`
+	CreatedAt      string `json:"created_at"`
 }
 
 func NewClient(apiToken string) (*Client, error) {
@@ -67,7 +60,9 @@ func (c *Client) GetSession() *resty.Client {
 }
 
 func (c *Client) GetProjects() ([]Project, error) {
-	var projectsResponse ProjectsResponse
+	var projectsResponse struct {
+		Projects []Project `json:"projects"`
+	}
 	_, err := c.restyClient.R().
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", c.restyClient.Token)).
 		SetResult(&projectsResponse).
@@ -81,7 +76,7 @@ func (c *Client) GetProjects() ([]Project, error) {
 }
 
 func (c *Client) GetEnvironments(projectID string) ([]Environment, error) {
-	var environmentsResponse EnvironmentsResponse
+	var environmentsResponse []Environment
 	_, err := c.restyClient.R().
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", c.restyClient.Token)).
 		SetResult(&environmentsResponse).
@@ -91,7 +86,7 @@ func (c *Client) GetEnvironments(projectID string) ([]Environment, error) {
 		return nil, err
 	}
 
-	return environmentsResponse.Environments, nil
+	return environmentsResponse, nil
 }
 
 func (c *Client) GetEnvironment(projectID, environmentID string) (*Environment, error) {

@@ -78,5 +78,6 @@ func (p *platformshProvider) Resources(ctx context.Context) []func() resource.Re
 func (p *platformshProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewProjectDataSource,
+		NewEnvironmentDataSource,
 	}
 }

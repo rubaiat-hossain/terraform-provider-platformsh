@@ -10,8 +10,11 @@ provider "platformsh" {
   api_token = "bs0oAldrnjRH6JMPSLtqrwjKzlgLudvXXc7Es8Zo2lQ"
 }
 
-data "platformsh_projects" "example" {}
-
-output "project_ids" {
-  value = [for p in data.platformsh_projects.example.projects : p.id]
+data "platformsh_environments" "example" {
+  project_id = "roqsqouvgnwsm"
 }
+
+output "environment_ids" {
+  value = [for e in data.platformsh_environments.example.environments : e.id]
+}
+

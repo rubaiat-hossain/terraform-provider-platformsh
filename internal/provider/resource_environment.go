@@ -35,6 +35,7 @@ type EnvironmentResourceModel struct {
 	DefaultDomain  types.String `tfsdk:"default_domain"`
 	EnableSMTP     types.Bool   `tfsdk:"enable_smtp"`
 	RestrictRobots types.Bool   `tfsdk:"restrict_robots"`
+	CreatedAt      types.String `tfsdk:"created_at"`
 }
 
 func (r *EnvironmentResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -80,6 +81,10 @@ func (r *EnvironmentResource) Schema(ctx context.Context, req resource.SchemaReq
 			"restrict_robots": schema.BoolAttribute{
 				Description: "Restrict robots for the environment",
 				Optional:    true,
+				Computed:    true,
+			},
+			"created_at": schema.StringAttribute{
+				Description: "Creation time of the environment",
 				Computed:    true,
 			},
 		},
@@ -136,19 +141,9 @@ func (r *EnvironmentResource) Create(ctx context.Context, req resource.CreateReq
 	data.DefaultDomain = types.StringValue(createdEnvironment.DefaultDomain)
 	data.EnableSMTP = types.BoolValue(createdEnvironment.EnableSMTP)
 	data.RestrictRobots = types.BoolValue(createdEnvironment.RestrictRobots)
+	data.CreatedAt = types.StringValue(createdEnvironment.CreatedAt)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Call the Read function to sync the state
-	readReq := resource.ReadRequest{
-		State: resp.State,
-	}
-	readResp := &resource.ReadResponse{}
-	r.Read(ctx, readReq, readResp)
-	resp.Diagnostics.Append(readResp.Diagnostics...)
 }
 
 func (r *EnvironmentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -178,6 +173,7 @@ func (r *EnvironmentResource) Read(ctx context.Context, req resource.ReadRequest
 	data.DefaultDomain = types.StringValue(environment.DefaultDomain)
 	data.EnableSMTP = types.BoolValue(environment.EnableSMTP)
 	data.RestrictRobots = types.BoolValue(environment.RestrictRobots)
+	data.CreatedAt = types.StringValue(environment.CreatedAt)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -214,19 +210,9 @@ func (r *EnvironmentResource) Update(ctx context.Context, req resource.UpdateReq
 	data.DefaultDomain = types.StringValue(updatedEnvironment.DefaultDomain)
 	data.EnableSMTP = types.BoolValue(updatedEnvironment.EnableSMTP)
 	data.RestrictRobots = types.BoolValue(updatedEnvironment.RestrictRobots)
+	data.CreatedAt = types.StringValue(updatedEnvironment.CreatedAt)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Call the Read function to sync the state
-	readReq := resource.ReadRequest{
-		State: resp.State,
-	}
-	readResp := &resource.ReadResponse{}
-	r.Read(ctx, readReq, readResp)
-	resp.Diagnostics.Append(readResp.Diagnostics...)
 }
 
 func (r *EnvironmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
