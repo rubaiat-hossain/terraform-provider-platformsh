@@ -11,6 +11,9 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &ProjectDataSource{}
+var _ datasource.DataSource = &EnvironmentDataSource{}
+
+// Project Data Source
 
 func NewProjectDataSource() datasource.DataSource {
 	return &ProjectDataSource{}
@@ -109,7 +112,7 @@ func (d *ProjectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-var _ datasource.DataSource = &EnvironmentDataSource{}
+// Environment Data Source
 
 func NewEnvironmentDataSource() datasource.DataSource {
 	return &EnvironmentDataSource{}
