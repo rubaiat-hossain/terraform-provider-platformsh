@@ -2,23 +2,21 @@ terraform {
   required_providers {
     platformsh = {
       source = "local.provider/rhs/platformsh"
+      version = "0.1.0"
     }
   }
 }
 
 provider "platformsh" {
-  api_token = "bs0oAldrnjRH6JMPSLtqrwjKzlgLudvXXc7Es8Zo2lQ"
+  api_token = "NLiGXU8Z6HzIkMjXHl6PKtzlXIflIF4xgWio63OjSvc"
 }
 
-resource "platformsh_environment" "example" {
-  project_id     = "roqsqouvgnwsm"
-  name           = "example-env"
-  title          = "Example Environment"
-  enable_smtp    = true
-  restrict_robots = false
-}
+resource "platformsh_environment" "new_environment" {
+  project_id      = "roqsqouvgnwsm"
+  name            = "lates-env"
+  title           = "Latest Environment"
+  }
 
-output "environment_id" {
-  value = platformsh_environment.example.id
+output "environment_status" {
+  value = platformsh_environment.new_environment.status
 }
-

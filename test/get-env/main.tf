@@ -7,7 +7,7 @@ terraform {
 }
 
 provider "platformsh" {
-  api_token = "bs0oAldrnjRH6JMPSLtqrwjKzlgLudvXXc7Es8Zo2lQ"
+  api_token = "NLiGXU8Z6HzIkMjXHl6PKtzlXIflIF4xgWio63OjSvc"
 }
 
 data "platformsh_environments" "example" {

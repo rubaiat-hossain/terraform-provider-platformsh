@@ -103,19 +103,29 @@ func (c *Client) GetEnvironment(projectID, environmentID string) (*Environment, 
 	return &environment, nil
 }
 
-func (c *Client) CreateEnvironment(projectID string, environment *Environment) (*Environment, error) {
-	var createdEnvironment Environment
+type CreateEnvironmentResponse struct {
+	Status string `json:"status"`
+	Code   int    `json:"code"`
+}
+
+func (c *Client) CreateEnvironment(projectID, environmentID string, env *Environment) (*CreateEnvironmentResponse, error) {
+	var response CreateEnvironmentResponse
 	_, err := c.restyClient.R().
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", c.restyClient.Token)).
-		SetBody(environment).
-		SetResult(&createdEnvironment).
-		Post(fmt.Sprintf("https://api.platform.sh/projects/%s/environments", projectID))
+		SetBody(map[string]interface{}{
+			"title":        env.Title,
+			"name":         env.Name,
+			"clone_parent": true,
+			"type":         env.Type,
+		}).
+		SetResult(&response).
+		Post(fmt.Sprintf("https://api.platform.sh/projects/%s/environments/%s/branch", projectID, environmentID))
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &createdEnvironment, nil
+	return &response, nil
 }
 
 func (c *Client) UpdateEnvironment(projectID, environmentID string, environment *Environment) (*Environment, error) {
