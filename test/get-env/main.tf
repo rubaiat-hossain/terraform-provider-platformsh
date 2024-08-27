@@ -7,11 +7,11 @@ terraform {
 }
 
 provider "platformsh" {
-  api_token = "<YOUR-API-KEY>"
+  api_token = "NLiGXU8Z6HzIkMjXHl6PKtzlXIflIF4xgWio63OjSvc"
 }
 
 data "platformsh_environments" "example" {
-  project_id = "<PROJECT-ID>"
+  project_id = "roqsqouvgnwsm"
 }
 
 output "environment_ids" {

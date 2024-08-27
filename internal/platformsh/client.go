@@ -116,10 +116,10 @@ func (c *Client) CreateEnvironment(projectID, environmentID string, env *Environ
 			"title":        env.Title,
 			"name":         env.Name,
 			"clone_parent": true,
-			"type":         env.Type,
+			"type":         "development",
 		}).
 		SetResult(&response).
-		Post(fmt.Sprintf("https://api.platform.sh/projects/%s/environments/%s/branch", projectID, environmentID))
+		Post(fmt.Sprintf("https://api.platform.sh/projects/%s/environments/main/branch", projectID))
 
 	if err != nil {
 		return nil, err
