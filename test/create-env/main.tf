@@ -13,8 +13,8 @@ provider "platformsh" {
 
 resource "platformsh_environment" "new_environment" {
   project_id      = "PROJECT_ID"
-  name            = "final-env"
-  title           = "Latest Environment"
+  name            = "test-env"
+  title           = "test-environment"
   }
 
 output "environment_status" {
