@@ -8,11 +8,11 @@ terraform {
 }
 
 provider "platformsh" {
-  api_token = "NLiGXU8Z6HzIkMjXHl6PKtzlXIflIF4xgWio63OjSvc"
+  api_token = "YOUR_API_KEY"
 }
 
 resource "platformsh_environment" "new_environment" {
-  project_id      = "roqsqouvgnwsm"
+  project_id      = "PROJECT_ID"
   name            = "final-env"
   title           = "Latest Environment"
   }

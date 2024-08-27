@@ -7,7 +7,7 @@ terraform {
 }
 
 provider "platformsh" {
-  api_token = "NLiGXU8Z6HzIkMjXHl6PKtzlXIflIF4xgWio63OjSvc"
+  api_token = "YOUR_API_KEY"
 }
 
 data "platformsh_projects" "example" {}
